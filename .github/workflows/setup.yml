@@ -1,0 +1,27 @@
+name: Setup Hello World App
+on: workflow_dispatch # This allows you to run it manually
+
+jobs:
+  initialize-npm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Generate NPM Files
+        run: |
+          # Create a basic package.json
+          echo '{"name": "hello-world", "version": "1.0.0", "main": "index.js", "scripts": {"start": "node index.js"}}' > package.json
+          
+          # Create the hello world script
+          echo 'console.log("Hello World!");' > index.js
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "System: Automatically created npm hello world"
+          git push
