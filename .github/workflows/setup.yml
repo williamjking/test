@@ -1,11 +1,12 @@
-name: Publish to NPM
+name: Publish to GitHub Packages
 on: workflow_dispatch
 
 jobs:
-  publish-npm:
+  publish-gpr:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write # This is the magic permission for GitHub Packages
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -14,23 +15,36 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@${{ github.repository_owner }}'
 
       - name: Generate and Publish
         run: |
-          # 1. Create files (Change the name below to something unique!)
-          echo '{"name": "my-unique-hello-world-name-1234567890", "version": "1.0.0", "main": "index.js", "scripts": {"start": "node index.js"}}' > package.json
-          echo 'console.log("Hello from the registry!");' > index.js
+          # 1. Variables
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
           
-          # 2. Publish to npm
+          # 2. Create package.json with the required @scope/name
+          echo "{
+            \"name\": \"@$OWNER/$REPO_NAME\",
+            \"version\": \"1.0.0\",
+            \"main\": \"index.js\",
+            \"publishConfig\": {
+              \"registry\": \"https://npm.pkg.github.com\"
+            }
+          }" > package.json
+          
+          echo 'console.log("Hello from GitHub Packages!");' > index.js
+          
+          # 3. Publish using the built-in GITHUB_TOKEN
           npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Sync Repo
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "System: Published version 1.0.0 to npm"
+          git commit -m "System: Package configured for GitHub Packages"
           git push
