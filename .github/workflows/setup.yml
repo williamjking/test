@@ -1,8 +1,8 @@
-name: Setup Hello World App
-on: workflow_dispatch # This allows you to run it manually
+name: Publish to NPM
+on: workflow_dispatch
 
 jobs:
-  initialize-npm:
+  publish-npm:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -10,18 +10,27 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Generate NPM Files
-        run: |
-          # Create a basic package.json
-          echo '{"name": "hello-world", "version": "1.0.0", "main": "index.js", "scripts": {"start": "node index.js"}}' > package.json
-          
-          # Create the hello world script
-          echo 'console.log("Hello World!");' > index.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
 
-      - name: Commit and Push
+      - name: Generate and Publish
+        run: |
+          # 1. Create files (Change the name below to something unique!)
+          echo '{"name": "my-unique-hello-world-name-1234567890", "version": "1.0.0", "main": "index.js", "scripts": {"start": "node index.js"}}' > package.json
+          echo 'console.log("Hello from the registry!");' > index.js
+          
+          # 2. Publish to npm
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Sync Repo
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "System: Automatically created npm hello world"
+          git commit -m "System: Published version 1.0.0 to npm"
           git push
